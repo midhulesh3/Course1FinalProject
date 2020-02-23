@@ -164,9 +164,40 @@ class Controller2D(object):
             # Change these outputs with the longitudinal controller. Note that
             # brake_output is optional and is not required to pass the
             # assignment, as the car will naturally slow down over time.
+
+            # implimenting a PI controller for logitudinal control
+
+            Pgain_throttle = 1 / 20  # this number is tunnable
+            Igain_throttle = 1 / 200  # tunnable gain
+
+            Pgain_brake = -1 / 20  # this number is tunnable,
+            Igain_brake = -1 / 200  # tunnable gain
+
             throttle_output = 0
             brake_output = 0
+            v_error = v_desired - v
+            self.vars.create_var('accum_error_throttle', 0.0)
+            self.vars.create_var('t_prev', 0.0)
+            self.vars.create_var('accum_error_brake', 0.0)
 
+            if v_error > 0:
+                self.vars.accum_error_brake = 0  # reset brake I controller when switching
+                brake_raw = 0
+
+                time_diff = t - self.vars.t_prev
+                self.vars.accum_error_throttle = self.vars.accum_error_throttle + v_error * time_diff  # integration of error
+                throttle_raw = Pgain_throttle * v_error + Igain_throttle * self.vars.accum_error_throttle
+            else:
+                self.vars.accum_error_throttle = 0
+                throttle_raw = 0
+
+                time_diff = t - self.vars.t_prev
+                self.vars.accum_error_brake = self.vars.accum_error_brake + v_error * time_diff  # integration of error
+                brake_raw = Pgain_brake * v_error + Igain_brake * self.vars.accum_error_brake
+
+            self.vars.t_prev = t
+            throttle_output = throttle_raw
+            brake_output = brake_raw
             ######################################################
             ######################################################
             # MODULE 7: IMPLEMENTATION OF LATERAL CONTROLLER HERE
