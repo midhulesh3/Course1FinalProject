@@ -209,8 +209,37 @@ class Controller2D(object):
                 example, can treat self.vars.v_previous like a "global variable".
             """
 
-            # Change the steer output with the lateral controller. 
-            steer_output = 0
+            for i in range(len(self._waypoints)):
+                dist = np.linalg.norm(np.array([
+                    self._waypoints[i][0] - self._current_x,
+                    self._waypoints[i][1] - self._current_y]))
+                if dist < min_dist:
+                    min_dist = dist
+                    min_idx = i
+            if min_idx < len(self._waypoints) - 1:
+                closest_point_ind = min_idx
+            else:
+                closet_point_ind = -1
+
+            x_target = self._waypoints[closest_point_ind][0]
+            y_target = self._waypoints[closest_point_ind][1]
+            angle = np.arctan((y_target-y)/(x_target-x))
+
+            if angle < 0:
+                angle = np.pi+angle # forcing 0 pi output
+
+            steering_raw = angle-yaw
+
+            # Change the steer output with the lateral controller.
+
+            if steering_raw > 1.22:
+                steer_output = 1.22
+            elif steering_raw < -1.22:
+                steer_output = -1.22
+            else:
+                steer_output = steer_output
+
+
 
             ######################################################
             # SET CONTROLS OUTPUT
