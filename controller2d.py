@@ -167,8 +167,8 @@ class Controller2D(object):
 
             # implimenting a PI controller for logitudinal control
 
-            Pgain_throttle = 1 / 20  # this number is tunnable
-            Igain_throttle = 1 / 200  # tunnable gain
+            Pgain_throttle = 0.7  # this number is tunnable
+            Igain_throttle = 1 / 5  # tunnable gain
 
             Pgain_brake = -1 / 20  # this number is tunnable,
             Igain_brake = -1 / 200  # tunnable gain
@@ -218,12 +218,12 @@ class Controller2D(object):
                     min_dist = dist
                     min_idx = i
             if min_idx < len(self._waypoints) - 1:
-                closest_point_ind = min_idx
+                x_target = self._waypoints[min_idx+1][0]
+                y_target = self._waypoints[min_idx+1][1]
             else:
-                closest_point_ind = -1
+                x_target = self._waypoints[-1][0]
+                y_target = self._waypoints[-1][1]
 
-            x_target = self._waypoints[closest_point_ind][0]
-            y_target = self._waypoints[closest_point_ind][1]
             angle = np.arctan((y_target-y)/(x_target-x))
 
             if angle < 0:
@@ -241,7 +241,7 @@ class Controller2D(object):
                 steer_output = steer_output
 
 
-
+            #steer_output = 0
             ######################################################
             # SET CONTROLS OUTPUT
             ######################################################
