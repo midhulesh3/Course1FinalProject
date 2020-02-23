@@ -208,28 +208,39 @@ class Controller2D(object):
                 access the persistent variables declared above here. For
                 example, can treat self.vars.v_previous like a "global variable".
             """
-            min_idx = 0
-            min_dist = float("inf")
-            for i in range(len(self._waypoints)):
-                dist = np.linalg.norm(np.array([
-                    self._waypoints[i][0] - self._current_x,
-                    self._waypoints[i][1] - self._current_y]))
-                if dist < min_dist:
-                    min_dist = dist
-                    min_idx = i
-            if min_idx < len(self._waypoints) - 1:
-                x_target = self._waypoints[min_idx+1][0]
-                y_target = self._waypoints[min_idx+1][1]
-            else:
-                x_target = self._waypoints[-1][0]
-                y_target = self._waypoints[-1][1]
+            l_front = 1.5  # distance of front axel from center point
+            x_f = self._current_x + l_front * np.sin(
+                yaw)  # translating refernce point to the front axel to implement stanley controller
+            y_f = self._current_y + l_front * np.cos(yaw)
+            local_line = np.polyfit(self._waypoints[:][0], self._waypoints[:][1], 1)
+            required_yaw = np.arctan(local_line[0]) # gives the orientation
 
-            angle = np.arctan((y_target-y)/(x_target-x))
+            steering_raw = required_yaw - yaw
 
-            if angle < 0:
-                angle = np.pi + angle # forcing 0 pi output
 
-            steering_raw = angle-yaw
+
+            # min_idx = 0
+            # min_dist = float("inf")
+            # for i in range(len(self._waypoints)):
+            #     dist = np.linalg.norm(np.array([
+            #         self._waypoints[i][0] - self._current_x,
+            #         self._waypoints[i][1] - self._current_y]))
+            #     if dist < min_dist:
+            #         min_dist = dist
+            #         min_idx = i
+            # if min_idx < len(self._waypoints) - 1:
+            #     x_target = self._waypoints[min_idx+1][0]
+            #     y_target = self._waypoints[min_idx+1][1]
+            # else:
+            #     x_target = self._waypoints[-1][0]
+            #     y_target = self._waypoints[-1][1]
+            #
+            # angle = np.arctan((y_target-y)/(x_target-x))
+            #
+            # if angle < 0:
+            #     angle = np.pi + angle  #forcing 0 to pi output
+            #
+            # steering_raw = angle-yaw
 
             # Change the steer output with the lateral controller.
 
@@ -240,8 +251,7 @@ class Controller2D(object):
             else:
                 steer_output = steer_output
 
-
-            #steer_output = 0
+            # steer_output = 0
             ######################################################
             # SET CONTROLS OUTPUT
             ######################################################
