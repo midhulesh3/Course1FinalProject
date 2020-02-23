@@ -208,7 +208,8 @@ class Controller2D(object):
                 access the persistent variables declared above here. For
                 example, can treat self.vars.v_previous like a "global variable".
             """
-
+            min_idx = 0
+            min_dist = float("inf")
             for i in range(len(self._waypoints)):
                 dist = np.linalg.norm(np.array([
                     self._waypoints[i][0] - self._current_x,
@@ -219,14 +220,14 @@ class Controller2D(object):
             if min_idx < len(self._waypoints) - 1:
                 closest_point_ind = min_idx
             else:
-                closet_point_ind = -1
+                closest_point_ind = -1
 
             x_target = self._waypoints[closest_point_ind][0]
             y_target = self._waypoints[closest_point_ind][1]
             angle = np.arctan((y_target-y)/(x_target-x))
 
             if angle < 0:
-                angle = np.pi+angle # forcing 0 pi output
+                angle = np.pi + angle # forcing 0 pi output
 
             steering_raw = angle-yaw
 
