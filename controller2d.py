@@ -6,6 +6,7 @@
 
 import cutils
 import numpy as np
+from statistics import mean
 
 
 class Controller2D(object):
@@ -212,10 +213,19 @@ class Controller2D(object):
             x_f = self._current_x + l_front * np.sin(
                 yaw)  # translating refernce point to the front axel to implement stanley controller
             y_f = self._current_y + l_front * np.cos(yaw)
-            local_line = np.polyfit(self._waypoints[:][0], self._waypoints[:][1], 1)
-            required_yaw = np.arctan(local_line[0]) # gives the orientation
+            total_points = len(self._waypoints)
+            #local_len = total_points//30
+            #local_line = np.polyfit(self._waypoints[0:2][0], self._waypoints[0:2][1], 1)
+            required_yaw = []
+            for i in range(total_points-1):
+                temp_var = np.arctan2(self._waypoints[i+1][1]-self._waypoints[i][1], self._waypoints[i+1][0]-self._waypoints[i][0]) # gives the orientation
+                required_yaw.append(temp_var)
+           #if required_yaw < 0:
+            #    required_yaw = np.pi + required_yaw  #forcing 0 to pi output
+ 
+            mean_req_yaw = mean(required_yaw)
+            steering_raw = mean_req_yaw - yaw
 
-            steering_raw = required_yaw - yaw
 
 
 
@@ -249,7 +259,7 @@ class Controller2D(object):
             elif steering_raw < -1.22:
                 steer_output = -1.22
             else:
-                steer_output = steer_output
+                steer_output = steering_raw
 
             # steer_output = 0
             ######################################################
