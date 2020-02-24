@@ -27,7 +27,6 @@ class Controller2D(object):
         self._conv_rad_to_steer = 180.0 / 70.0 / np.pi
         self._pi = np.pi
         self._2pi = 2.0 * np.pi
-        self._min_distance_ind=0
 
     def update_values(self, x, y, yaw, speed, timestamp, frame):
         self._current_x = x
@@ -52,7 +51,6 @@ class Controller2D(object):
                 min_idx = i
         if min_idx < len(self._waypoints) - 1:
             desired_speed = self._waypoints[min_idx][2]
-            self._min_distance_ind = min_idx
         else:
             desired_speed = self._waypoints[-1][2]
         
@@ -214,13 +212,15 @@ class Controller2D(object):
                 example, can treat self.vars.v_previous like a "global variable".
             """
             l_front = 1.5  # distance of front axel from center point
-            x_f = self._current_x + l_front * np.sin(
-                yaw)  # translating refernce point to the front axel to implement stanley controller
-            y_f = self._current_y + l_front * np.cos(yaw)
+            # translating refernce point to the front axel to implement stanley controller
+            x_f = self._current_x + l_front * np.cos(yaw)
+            y_f = self._current_y + l_front * np.sin(yaw)
             total_points = len(self._waypoints)
             #local_len = total_points//30
-            #local_line = np.polyfit(self._waypoints[0:2][0], self._waypoints[0:2][1], 1)
-            cross_track_gain = -0.03
+            local_line = np.polyfit(self._waypoints[:][0], self._waypoints[:][1], 1)
+            cross_track_error = (local_line[0]*(-1)*x_f + y_f - local_line[1])/(np.sqrt(local_line[0]**2+1))
+
+            cross_track_gain = 0.3
             required_yaw = []
             #temp_var = cross_track_gain*np.arctan2(self._waypoints[0][1]-y, self._waypoints[0][0]-x)
             #required_yaw.append(temp_var)
@@ -230,7 +230,7 @@ class Controller2D(object):
            #if required_yaw < 0:
             #    required_yaw = np.pi + required_yaw  #forcing 0 to pi output
             steer_for_cross_track = np.arctan((cross_track_gain*cross_track_error))
-            if cross_track_error<3:
+            if cross_track_error < 2:
                 steer_for_cross_track = 0
             mean_req_yaw = mean(required_yaw)
             steering_raw = mean_req_yaw - yaw
