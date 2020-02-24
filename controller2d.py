@@ -27,6 +27,7 @@ class Controller2D(object):
         self._conv_rad_to_steer = 180.0 / 70.0 / np.pi
         self._pi = np.pi
         self._2pi = 2.0 * np.pi
+        self._min_distance_ind=0
 
     def update_values(self, x, y, yaw, speed, timestamp, frame):
         self._current_x = x
@@ -51,8 +52,10 @@ class Controller2D(object):
                 min_idx = i
         if min_idx < len(self._waypoints) - 1:
             desired_speed = self._waypoints[min_idx][2]
+            self._min_distance_ind = min_idx
         else:
             desired_speed = self._waypoints[-1][2]
+        
         self._desired_speed = desired_speed
 
     def update_waypoints(self, new_waypoints):
@@ -94,6 +97,7 @@ class Controller2D(object):
         throttle_output = 0
         steer_output = 0
         brake_output = 0
+         
 
         ######################################################
         ######################################################
@@ -168,8 +172,8 @@ class Controller2D(object):
 
             # implimenting a PI controller for logitudinal control
 
-            Pgain_throttle = 0.7  # this number is tunnable
-            Igain_throttle = 1 / 5  # tunnable gain
+            Pgain_throttle = 1.1  # this number is tunnable
+            Igain_throttle = 1 / 8  # tunnable gain
 
             Pgain_brake = -1 / 20  # this number is tunnable,
             Igain_brake = -1 / 200  # tunnable gain
@@ -189,7 +193,7 @@ class Controller2D(object):
                 self.vars.accum_error_throttle = self.vars.accum_error_throttle + v_error * time_diff  # integration of error
                 throttle_raw = Pgain_throttle * v_error + Igain_throttle * self.vars.accum_error_throttle
             else:
-                self.vars.accum_error_throttle = 0
+                self.vars.accum_error_throttle = 0.75*self.vars.accum_error_throttle
                 throttle_raw = 0
 
                 time_diff = t - self.vars.t_prev
@@ -216,13 +220,18 @@ class Controller2D(object):
             total_points = len(self._waypoints)
             #local_len = total_points//30
             #local_line = np.polyfit(self._waypoints[0:2][0], self._waypoints[0:2][1], 1)
+            cross_track_gain = -0.03
             required_yaw = []
+            #temp_var = cross_track_gain*np.arctan2(self._waypoints[0][1]-y, self._waypoints[0][0]-x)
+            #required_yaw.append(temp_var)
             for i in range(total_points-1):
                 temp_var = np.arctan2(self._waypoints[i+1][1]-self._waypoints[i][1], self._waypoints[i+1][0]-self._waypoints[i][0]) # gives the orientation
                 required_yaw.append(temp_var)
            #if required_yaw < 0:
             #    required_yaw = np.pi + required_yaw  #forcing 0 to pi output
- 
+            steer_for_cross_track = np.arctan((cross_track_gain*cross_track_error))
+            if cross_track_error<3:
+                steer_for_cross_track = 0
             mean_req_yaw = mean(required_yaw)
             steering_raw = mean_req_yaw - yaw
 
@@ -259,7 +268,7 @@ class Controller2D(object):
             elif steering_raw < -1.22:
                 steer_output = -1.22
             else:
-                steer_output = steering_raw
+                steer_output = steering_raw + steer_for_cross_track
 
             # steer_output = 0
             ######################################################
