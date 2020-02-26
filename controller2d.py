@@ -239,9 +239,9 @@ class Controller2D(object):
 
             ##########
             local_line = np.polyfit(self._waypoints[:][0], self._waypoints[:][1], 1)
-            cross_track_error = (local_line[0] * (-1) * x_f + y_f - local_line[1]) / (np.sqrt(local_line[0] ** 2 + 1))
+            cross_track_error = abs(local_line[0] * (-1) * x_f + y_f - local_line[1]) / (np.sqrt(local_line[0] ** 2 + 1))
 
-            cross_track_gain = 0.007
+            cross_track_gain = 0.0037
             required_yaw = []
             # temp_var = cross_track_gain*np.arctan2(self._waypoints[0][1]-y, self._waypoints[0][0]-x)
             # required_yaw.append(temp_var)
@@ -253,11 +253,9 @@ class Controller2D(object):
             #    required_yaw = np.pi + required_yaw  #forcing 0 to pi output
             steer_for_cross_track = np.sign(y_nearest_trans)*np.arctan((cross_track_gain * cross_track_error)/v)
 
-            if cross_track_error < 2:
-                steer_for_cross_track = 0
             mean_req_yaw = mean(required_yaw)
             steering_raw = mean_req_yaw - yaw
-
+            print(cross_track_error) 
 
 
             # min_idx = 0
@@ -284,13 +282,11 @@ class Controller2D(object):
             # steering_raw = angle-yaw
 
             # Change the steer output with the lateral controller.
-
-            if steering_raw > 1.22:
+            steer_output = steering_raw + steer_for_cross_track
+            if steer_output > 1.22:
                 steer_output = 1.22
-            elif steering_raw < -1.22:
+            elif steer_output < -1.22:
                 steer_output = -1.22
-            else:
-                steer_output = steering_raw + steer_for_cross_track
 
             # steer_output = 0
             ######################################################
