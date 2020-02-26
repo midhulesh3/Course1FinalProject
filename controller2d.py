@@ -53,7 +53,7 @@ class Controller2D(object):
             desired_speed = self._waypoints[min_idx][2]
         else:
             desired_speed = self._waypoints[-1][2]
-        
+
         self._desired_speed = desired_speed
 
     def update_waypoints(self, new_waypoints):
@@ -95,7 +95,6 @@ class Controller2D(object):
         throttle_output = 0
         steer_output = 0
         brake_output = 0
-         
 
         ######################################################
         ######################################################
@@ -191,7 +190,7 @@ class Controller2D(object):
                 self.vars.accum_error_throttle = self.vars.accum_error_throttle + v_error * time_diff  # integration of error
                 throttle_raw = Pgain_throttle * v_error + Igain_throttle * self.vars.accum_error_throttle
             else:
-                self.vars.accum_error_throttle = 0.75*self.vars.accum_error_throttle
+                self.vars.accum_error_throttle = 0.75 * self.vars.accum_error_throttle
                 throttle_raw = 0
 
                 time_diff = t - self.vars.t_prev
@@ -216,25 +215,48 @@ class Controller2D(object):
             x_f = self._current_x + l_front * np.cos(yaw)
             y_f = self._current_y + l_front * np.sin(yaw)
             total_points = len(self._waypoints)
-            #local_len = total_points//30
-            local_line = np.polyfit(self._waypoints[:][0], self._waypoints[:][1], 1)
-            cross_track_error = (local_line[0]*(-1)*x_f + y_f - local_line[1])/(np.sqrt(local_line[0]**2+1))
+            #######
+            min_idx = 0
+            min_dist = float("inf")
+            for i in range(len(self._waypoints)):
+                dist = np.linalg.norm(np.array([
+                    self._waypoints[i][0] - x_f,
+                    self._waypoints[i][1] - y_f]))
+                if dist < min_dist:
+                    min_dist = dist
+                    min_idx = i
 
-            cross_track_gain = 0.3
+            if min_idx < len(self._waypoints) - 1:
+                x_nearest, y_nearest = self._waypoints[min_idx][0:2]
+            else:
+                x_nearest, y_nearest = self._waypoints[-1][0:2]
+
+            x_nearest_inter = x_nearest - x_f
+            y_nearest_inter = y_nearest - y_f
+
+            x_nearest_trans = np.cos(yaw) * x_nearest_inter + np.sin(yaw) * y_nearest_inter
+            y_nearest_trans = -np.sin(yaw)*x_nearest_inter + np.cos(yaw) * y_nearest_inter
+
+            ##########
+            local_line = np.polyfit(self._waypoints[:][0], self._waypoints[:][1], 1)
+            cross_track_error = (local_line[0] * (-1) * x_f + y_f - local_line[1]) / (np.sqrt(local_line[0] ** 2 + 1))
+
+            cross_track_gain = 0.007
             required_yaw = []
-            #temp_var = cross_track_gain*np.arctan2(self._waypoints[0][1]-y, self._waypoints[0][0]-x)
-            #required_yaw.append(temp_var)
-            for i in range(total_points-1):
-                temp_var = np.arctan2(self._waypoints[i+1][1]-self._waypoints[i][1], self._waypoints[i+1][0]-self._waypoints[i][0]) # gives the orientation
+            # temp_var = cross_track_gain*np.arctan2(self._waypoints[0][1]-y, self._waypoints[0][0]-x)
+            # required_yaw.append(temp_var)
+            for i in range(total_points - 1):
+                temp_var = np.arctan2(self._waypoints[i + 1][1] - self._waypoints[i][1],
+                                      self._waypoints[i + 1][0] - self._waypoints[i][0])  # gives the orientation
                 required_yaw.append(temp_var)
-           #if required_yaw < 0:
+            # if required_yaw < 0:
             #    required_yaw = np.pi + required_yaw  #forcing 0 to pi output
-            steer_for_cross_track = np.arctan((cross_track_gain*cross_track_error))
+            steer_for_cross_track = np.sign(y_nearest_trans)*np.arctan((cross_track_gain * cross_track_error)/v)
+
             if cross_track_error < 2:
                 steer_for_cross_track = 0
             mean_req_yaw = mean(required_yaw)
             steering_raw = mean_req_yaw - yaw
-
 
 
 
